@@ -1,15 +1,8 @@
 import os
+import bcrypt
 from supabase import create_client, Client
 
-# ── Supabase clients ──────────────────────────────────────────
-def get_supabase_client() -> Client:
-    """Regular client — used only for auth (login/register)"""
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
-    return create_client(url, key)
-
 def get_admin_client() -> Client:
-    """Service role client — used for all DB operations (bypasses RLS)"""
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SERVICE_KEY")
     return create_client(url, key)
@@ -17,50 +10,84 @@ def get_admin_client() -> Client:
 
 # ── Auth operations ───────────────────────────────────────────
 def register_user(email, password):
-    """Register a new user with Supabase Auth"""
+    """Register user directly in database with hashed password"""
     try:
-        supabase = get_supabase_client()
-        result = supabase.auth.sign_up({"email": email, "password": password})
-        if result.user:
-            return {"success": True, "user": result.user}
-        return {"success": False, "error": "Registration failed"}
+        admin = get_admin_client()
+
+        # Check if email already exists
+        existing = admin.table("users") \
+                        .select("id") \
+                        .eq("email", email) \
+                        .execute()
+
+        if existing.data:
+            return {"success": False, "error": "Email already registered"}
+
+        # Hash password
+        password_hash = bcrypt.hashpw(
+            password.encode("utf-8"),
+            bcrypt.gensalt()
+        ).decode("utf-8")
+
+        # Insert user
+        result = admin.table("users").insert({
+            "email": email,
+            "password_hash": password_hash
+        }).execute()
+
+        user = result.data[0]
+        return {"success": True, "user": user}
+
     except Exception as e:
+        print(f"Register error: {e}")
         return {"success": False, "error": str(e)}
 
+
 def login_user(email, password):
-    """Login user and return session"""
+    """Login by checking hashed password directly from database"""
     try:
-        supabase = get_supabase_client()
-        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        if result.user:
-            return {"success": True, "user": result.user, "session": result.session}
-        return {"success": False, "error": "Invalid email or password"}
+        admin = get_admin_client()
+
+        # Find user by email
+        result = admin.table("users") \
+                      .select("*") \
+                      .eq("email", email) \
+                      .execute()
+
+        if not result.data:
+            return {"success": False, "error": "Invalid email or password"}
+
+        user = result.data[0]
+
+        # Check password
+        if bcrypt.checkpw(password.encode("utf-8"), user["password_hash"].encode("utf-8")):
+            return {"success": True, "user": user}
+        else:
+            return {"success": False, "error": "Invalid email or password"}
+
     except Exception as e:
+        print(f"Login error: {e}")
         return {"success": False, "error": "Invalid email or password"}
 
 
 # ── Company profile operations ────────────────────────────────
 def get_company_profile(user_id):
-    """Fetch company profile for a user"""
     try:
         admin = get_admin_client()
         result = admin.table("company_profiles") \
                       .select("*") \
                       .eq("user_id", user_id) \
                       .execute()
-        if result.data:
-            return result.data[0]
-        return None
+        return result.data[0] if result.data else None
     except Exception as e:
         print(f"Error fetching profile: {e}")
         return None
 
+
 def save_company_profile(user_id, data):
-    """Create or update company profile"""
     try:
         admin = get_admin_client()
 
-        # Check if profile already exists
         existing = admin.table("company_profiles") \
                         .select("id") \
                         .eq("user_id", user_id) \
@@ -83,13 +110,11 @@ def save_company_profile(user_id, data):
         }
 
         if existing.data:
-            # Update
             admin.table("company_profiles") \
                  .update(profile_data) \
                  .eq("user_id", user_id) \
                  .execute()
         else:
-            # Insert
             admin.table("company_profiles") \
                  .insert(profile_data) \
                  .execute()
@@ -102,10 +127,8 @@ def save_company_profile(user_id, data):
 
 # ── Tender history operations ─────────────────────────────────
 def save_tender_analysis(user_id, data):
-    """Save a tender analysis result to history"""
     try:
         admin = get_admin_client()
-
         record = {
             "user_id": user_id,
             "project_name": data.get("project_name", "Unknown Project"),
@@ -119,15 +142,14 @@ def save_tender_analysis(user_id, data):
             "summary": data.get("summary", ""),
             "recommendations": data.get("recommendations", []),
         }
-
         admin.table("tender_history").insert(record).execute()
         return {"success": True}
     except Exception as e:
         print(f"Error saving analysis: {e}")
         return {"success": False, "error": str(e)}
 
+
 def get_tender_history(user_id):
-    """Fetch all past tender analyses for a user"""
     try:
         admin = get_admin_client()
         result = admin.table("tender_history") \
@@ -140,11 +162,10 @@ def get_tender_history(user_id):
         print(f"Error fetching history: {e}")
         return []
 
+
 def get_dashboard_stats(user_id):
-    """Get stats for the dashboard"""
     try:
         history = get_tender_history(user_id)
-
         total_analyzed = len(history)
         avg_score = 0
         last_tender = None
@@ -152,13 +173,13 @@ def get_dashboard_stats(user_id):
         if history:
             scores = [h["eligibility_score"] for h in history if h.get("eligibility_score")]
             avg_score = round(sum(scores) / len(scores)) if scores else 0
-            last_tender = history[0]  # most recent (already sorted desc)
+            last_tender = history[0]
 
         return {
             "total_analyzed": total_analyzed,
             "avg_score": avg_score,
             "last_tender": last_tender,
-            "recent_history": history[:5]  # last 5 only for dashboard
+            "recent_history": history[:5]
         }
     except Exception as e:
         print(f"Error getting stats: {e}")
