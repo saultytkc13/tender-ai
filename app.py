@@ -63,8 +63,7 @@ def register():
         result = register_user(email, password)
 
         if result["success"]:
-            user_id = result["user"].id
-
+            user_id = result["user"]["id"]
             # Save company profile from registration form
             profile_data = {
                 "company_name": request.form.get("company_name", ""),
