@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}History — Tender AI{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-10">
+  <h1 class="text-3xl font-bold mb-1">Analysis History</h1>
+  <p class="text-gray-400 text-sm mb-8">All your past tender analyses</p>
+
+  {% if history %}
+  <div class="space-y-4">
+    {% for item in history %}
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h2 class="font-bold text-lg">{{ item.project_name }}</h2>
+          <p class="text-sm text-gray-400">{{ item.location or '—' }} · {{ item.created_at[:10] }}</p>
+        </div>
+        <div class="flex gap-3">
+          <span class="px-3 py-1 rounded-full text-sm font-semibold
+            {% if item.eligibility_score >= 70 %} bg-green-100 text-green-700
+            {% elif item.eligibility_score >= 40 %} bg-yellow-100 text-yellow-700
+            {% else %} bg-red-100 text-red-700 {% endif %}">
+            Eligibility: {{ item.eligibility_score }}%
+          </span>
+          <span class="px-3 py-1 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-700">
+            Difficulty: {{ item.difficulty_score }}/10
+          </span>
+        </div>
+      </div>
+      <p class="text-sm text-gray-600 mt-3">{{ item.summary }}</p>
+      {% if item.recommendations %}
+      <ul class="mt-3 space-y-1">
+        {% for rec in item.recommendations %}
+        <li class="text-xs text-gray-500 flex items-start gap-1"><span class="text-indigo-400">✓</span> {{ rec }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="bg-white rounded-xl shadow-sm p-16 text-center text-gray-400">
+    <p class="text-5xl mb-4">📂</p>
+    <p class="font-medium">No history yet.</p>
+    <a href="/analyze" class="inline-block mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700">Analyze Your First Tender</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

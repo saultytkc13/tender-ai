@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Register — Tender AI{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-12">
+  <div class="bg-white p-8 rounded-2xl shadow-md">
+    <h1 class="text-2xl font-bold mb-1">Create your account</h1>
+    <p class="text-gray-400 text-sm mb-6">Fill in your company details to get started</p>
+
+    <form method="POST">
+      <!-- Account -->
+      <h2 class="font-semibold text-indigo-600 mb-3">Account Details</h2>
+      <div class="grid md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium mb-1">Email *</label>
+          <input type="email" name="email" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Password *</label>
+          <input type="password" name="password" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+      </div>
+
+      <!-- Company -->
+      <h2 class="font-semibold text-indigo-600 mb-3">Company Details</h2>
+      <div class="grid md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium mb-1">Company Name *</label>
+          <input type="text" name="company_name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Registration Number</label>
+          <input type="text" name="registration_number" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">PAN Number</label>
+          <input type="text" name="pan_number" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Annual Turnover (₹ Lakhs)</label>
+          <input type="number" name="turnover" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Years of Experience</label>
+          <input type="number" name="experience" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Employee Count</label>
+          <input type="number" name="employee_count" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Primary Domain</label>
+          <input type="text" name="domain" placeholder="e.g. Construction, IT, Healthcare" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Sub Domains <span class="text-gray-400">(comma separated)</span></label>
+          <input type="text" name="sub_domains" placeholder="e.g. Roads, Bridges, Drainage" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Company Email</label>
+          <input type="email" name="company_email" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Phone</label>
+          <input type="text" name="phone" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1">Certifications <span class="text-gray-400">(ISO, etc.)</span></label>
+          <input type="text" name="certifications" placeholder="e.g. ISO 9001, ISO 14001" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1">Address</label>
+          <textarea name="address" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"></textarea>
+        </div>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+        Create Account
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-gray-400 mt-4">
+      Already have an account? <a href="/login" class="text-indigo-600 font-medium hover:underline">Login</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

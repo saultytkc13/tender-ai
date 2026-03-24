@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Profile — Tender AI{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-10">
+  <h1 class="text-3xl font-bold mb-1">Company Profile</h1>
+  <p class="text-gray-400 text-sm mb-8">Keep your details up to date for accurate analysis</p>
+
+  <div class="bg-white rounded-2xl shadow-sm p-8">
+    <form method="POST">
+      <div class="grid md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label class="block text-sm font-medium mb-1">Company Name</label>
+          <input type="text" name="company_name" value="{{ profile.company_name if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Registration Number</label>
+          <input type="text" name="registration_number" value="{{ profile.registration_number if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">PAN Number</label>
+          <input type="text" name="pan_number" value="{{ profile.pan_number if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Annual Turnover (₹ Lakhs)</label>
+          <input type="number" name="turnover" value="{{ profile.turnover if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Years of Experience</label>
+          <input type="number" name="experience" value="{{ profile.experience if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Employee Count</label>
+          <input type="number" name="employee_count" value="{{ profile.employee_count if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Primary Domain</label>
+          <input type="text" name="domain" value="{{ profile.domain if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Sub Domains <span class="text-gray-400">(comma separated)</span></label>
+          <input type="text" name="sub_domains" value="{{ profile.sub_domains | join(', ') if profile and profile.sub_domains else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Company Email</label>
+          <input type="email" name="company_email" value="{{ profile.company_email if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Phone</label>
+          <input type="text" name="phone" value="{{ profile.phone if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1">Certifications</label>
+          <input type="text" name="certifications" value="{{ profile.certifications if profile else '' }}"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1">Address</label>
+          <textarea name="address" rows="2"
+            class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none">{{ profile.address if profile else '' }}</textarea>
+        </div>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+        Save Profile
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

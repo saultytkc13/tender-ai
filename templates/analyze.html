@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Analyze Tender — Tender AI{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+  <h1 class="text-3xl font-bold mb-1">Analyze a Tender</h1>
+  <p class="text-gray-400 text-sm mb-8">Upload a tender PDF and get instant AI-powered analysis</p>
+
+  <!-- Upload form -->
+  {% if not result %}
+  <div class="bg-white rounded-2xl shadow-sm p-8 mb-8">
+    <form method="POST" enctype="multipart/form-data" id="analyzeForm">
+
+      <!-- PDF Upload -->
+      <div class="mb-6">
+        <label class="block font-semibold mb-2">Upload Tender PDF *</label>
+        <input type="file" name="pdf_file" accept=".pdf" required
+          class="w-full border-2 border-dashed border-indigo-300 rounded-xl px-4 py-6 text-sm text-gray-500 cursor-pointer hover:border-indigo-500 focus:outline-none"/>
+      </div>
+
+      <!-- Override options -->
+      <div class="mb-6">
+        <p class="font-semibold mb-2 text-sm text-gray-500">Override Profile (optional — for one-off analysis)</p>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">Domain Override</label>
+            <input type="text" name="override_domain"
+              placeholder="e.g. IT, Construction"
+              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Turnover Override (₹ Lakhs)</label>
+            <input type="number" name="override_turnover"
+              class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Company profile being used -->
+      {% if profile %}
+      <div class="bg-indigo-50 rounded-lg p-4 text-sm mb-6">
+        <p class="font-semibold text-indigo-700 mb-1">Using your saved profile:</p>
+        <p class="text-gray-600">{{ profile.company_name }} · {{ profile.domain }} · ₹{{ profile.turnover }} Lakhs · {{ profile.experience }} yrs exp</p>
+      </div>
+      {% endif %}
+
+      <button type="submit" id="submitBtn"
+        class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+        Analyze Tender
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- Results -->
+  {% if result %}
+  <div class="space-y-6">
+
+    <!-- Score cards -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white rounded-xl shadow-sm p-6 text-center">
+        <p class="text-sm text-gray-400 mb-1">Eligibility Score</p>
+        <p class="text-5xl font-extrabold
+          {% if result.eligibility_score >= 70 %} text-green-500
+          {% elif result.eligibility_score >= 40 %} text-yellow-500
+          {% else %} text-red-500 {% endif %}">
+          {{ result.eligibility_score }}%
+        </p>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm p-6 text-center">
+        <p class="text-sm text-gray-400 mb-1">Difficulty Score</p>
+        <p class="text-5xl font-extrabold text-indigo-600">{{ result.difficulty_score }}<span class="text-2xl text-gray-300">/10</span></p>
+      </div>
+    </div>
+
+    <!-- Project details -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold text-lg mb-4">Project Details</h2>
+      <div class="grid md:grid-cols-2 gap-3 text-sm">
+        <div><span class="text-gray-400">Project Name</span><p class="font-medium">{{ result.project_name }}</p></div>
+        <div><span class="text-gray-400">Location</span><p class="font-medium">{{ result.location or '—' }}</p></div>
+        <div><span class="text-gray-400">Project Value</span><p class="font-medium">₹{{ result.project_value }} Lakhs</p></div>
+        <div><span class="text-gray-400">Deadline</span><p class="font-medium">{{ result.deadline or '—' }}</p></div>
+        <div><span class="text-gray-400">Required Turnover</span><p class="font-medium">₹{{ result.required_turnover }} Lakhs</p></div>
+        <div><span class="text-gray-400">Required Experience</span><p class="font-medium">{{ result.required_experience }} years</p></div>
+        <div><span class="text-gray-400">Domain Match</span>
+          <p class="font-medium
+            {% if result.domain_match == 'Strong Match' %} text-green-600
+            {% elif result.domain_match == 'Partial Match' %} text-yellow-600
+            {% else %} text-red-600 {% endif %}">
+            {{ result.domain_match }}
+          </p>
+        </div>
+        <div><span class="text-gray-400">Certifications Required</span><p class="font-medium">{{ result.required_certifications or 'None' }}</p></div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold text-lg mb-2">Summary</h2>
+      <p class="text-gray-600 text-sm leading-relaxed">{{ result.summary }}</p>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h2 class="font-bold text-lg mb-3">Recommendations</h2>
+      <ul class="space-y-2">
+        {% for rec in result.recommendations %}
+        <li class="flex items-start gap-2 text-sm text-gray-600">
+          <span class="text-indigo-500 mt-0.5">✓</span>
+          {{ rec }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Analyze another -->
+    <a href="/analyze" class="block text-center bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+      Analyze Another Tender
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Loading state -->
+<script>
+  document.getElementById("analyzeForm")?.addEventListener("submit", function () {
+    const btn = document.getElementById("submitBtn");
+    btn.textContent = "Analyzing... please wait ⏳";
+    btn.disabled = true;
+    btn.classList.add("opacity-70", "cursor-not-allowed");
+  });
+</script>
+{% endblock %}
