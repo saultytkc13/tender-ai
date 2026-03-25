@@ -11,7 +11,7 @@ from auth import (
     save_tender_analysis, get_tender_history,
     get_dashboard_stats
 )
-from analyzer import extract_text_from_pdf, extract_questions, analyze_tender
+from analyzer import extract_text_from_pdf, extract_questions, analyze_tender, format_pages_for_prompt
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "tender-ai-secret-2024")
@@ -132,6 +132,10 @@ def dashboard():
                            **stats)
 
 
+import tempfile
+import os
+import json
+
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
     redir = require_login()
@@ -140,7 +144,7 @@ def analyze():
     user_id = session["user_id"]
     profile = get_company_profile(user_id)
 
-    # ── Step 1: PDF uploaded → extract questions ──────────────
+    # ── Step 1: PDF uploaded ──────────────────────────────────
     if request.method == "POST" and request.form.get("step") == "upload":
         if "pdf_file" not in request.files:
             flash("Please upload a PDF file.", "error")
@@ -151,79 +155,110 @@ def analyze():
             flash("No file selected.", "error")
             return render_template("analyze.html", profile=profile)
 
-        import tempfile
+        # Save PDF to temp file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             pdf_file.save(tmp.name)
-            pdf_text = extract_text_from_pdf(tmp.name)
-            # Store path for second call
-            session["tmp_pdf_path"] = tmp.name
+            tmp_pdf_path = tmp.name
 
-        if not pdf_text:
+        pages = extract_text_from_pdf(tmp_pdf_path)
+
+        if not pages:
             flash("Could not extract text from PDF.", "error")
+            os.unlink(tmp_pdf_path)
             return render_template("analyze.html", profile=profile)
 
-        # Store pdf text in session for second call
-        session["pdf_text"] = pdf_text[:8000]
+        pdf_text_with_pages = format_pages_for_prompt(pages)
 
-        # Override profile if provided
+        # ── Save to temp JSON file instead of session ─────────
+        data_to_store = {
+            "pdf_text": pdf_text_with_pages,
+            "pdf_pages": [
+                {
+                    "page": p["page"],
+                    "full_text": p["full_text"],
+                    "lines": p["lines"]
+                }
+                for p in pages
+            ]
+        }
+
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".json",
+            mode="w",
+            encoding="utf-8"
+        ) as data_file:
+            json.dump(data_to_store, data_file)
+            data_file_path = data_file.name
+
+        # Only store the file PATH in session (tiny)
+        session["data_file"] = data_file_path
+        os.unlink(tmp_pdf_path)
+
         analysis_profile = dict(profile) if profile else {}
         if request.form.get("override_domain"):
             analysis_profile["domain"] = request.form.get("override_domain")
         if request.form.get("override_turnover"):
             analysis_profile["turnover"] = request.form.get("override_turnover")
-
         session["analysis_profile"] = analysis_profile
 
-        # First AI call — get questions
-        q_result = extract_questions(pdf_text, analysis_profile)
-
+        # First AI call
+        q_result = extract_questions(pdf_text_with_pages, analysis_profile)
         if not q_result["success"]:
             flash(f"Error reading tender: {q_result['error']}", "error")
             return render_template("analyze.html", profile=profile)
 
-        # Return page with questions popup data
         return render_template("analyze.html",
                                profile=profile,
                                show_questions=True,
                                questions_data=q_result["data"])
 
-    # ── Step 2: Answers submitted → final analysis ────────────
+    # ── Step 2: Answers submitted ─────────────────────────────
     if request.method == "POST" and request.form.get("step") == "answers":
-        pdf_text = session.get("pdf_text", "")
+        data_file = session.get("data_file")
         analysis_profile = session.get("analysis_profile", {})
 
-        if not pdf_text:
+        if not data_file or not os.path.exists(data_file):
             flash("Session expired. Please upload the PDF again.", "error")
             return render_template("analyze.html", profile=profile)
 
-        # Collect all answers from form
+        # Load PDF data from temp file
+        with open(data_file, "r", encoding="utf-8") as f:
+            stored = json.load(f)
+
+        pdf_text = stored.get("pdf_text", "")
+        pdf_pages = stored.get("pdf_pages", [])
+
+        # Collect answers
         answers = {}
         for key, value in request.form.items():
             if key.startswith("answer_"):
                 question_text = key.replace("answer_", "").replace("_", " ")
                 answers[question_text] = value
 
-        # Second AI call — full analysis with answers
-        result = analyze_tender(pdf_text, analysis_profile, answers)
+        # Second AI call with verified citations
+        result = analyze_tender(pdf_text, analysis_profile, answers, pages=pdf_pages)
+
+        # Clean up temp file
+        try:
+            os.unlink(data_file)
+        except:
+            pass
+
+        session.pop("data_file", None)
+        session.pop("analysis_profile", None)
 
         if not result["success"]:
             flash(f"Analysis failed: {result['error']}", "error")
             return render_template("analyze.html", profile=profile)
 
-        # Save to history
         save_tender_analysis(user_id, result["data"])
-
-        # Clear session data
-        session.pop("pdf_text", None)
-        session.pop("analysis_profile", None)
-        session.pop("tmp_pdf_path", None)
 
         return render_template("analyze.html",
                                profile=profile,
                                result=result["data"])
 
     return render_template("analyze.html", profile=profile)
-
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
